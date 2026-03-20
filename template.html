@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Roy Antoni Siregar</title>
+    <style>
+        @page {
+            margin: 15mm 15mm 15mm 15mm;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif; /* Kembali ke font modern yang bersih */
+            font-size: 10.5pt;
+            color: #000;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            font-size: 18pt;
+            margin: 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header p {
+            margin: 2px 0;
+            font-size: 10pt;
+        }
+        .header a {
+            color: #0563C1; /* Kode hex warna biru standar link MS Word */
+            text-decoration: underline;
+        }
+        h2 {
+            font-size: 12pt;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        .content-section {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        .skills-section p {
+            margin: 3px 0;
+        }
+        ul {
+            margin-top: 5px;
+            margin-bottom: 5px;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 4px;
+        }
+        strong {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>{{NAME}}</h1>
+        <p>{{CONTACT_INFO}}</p>
+    </div>
+
+    <h2>Professional Summary</h2>
+    <div class="content-section">
+        {{SUMMARY}}
+    </div>
+
+    <h2>Technical Skills</h2>
+    <div class="content-section skills-section">
+        {{SKILLS}}
+    </div>
+
+    <h2>Professional Experience</h2>
+    <div class="content-section">
+        {{EXPERIENCE}}
+    </div>
+
+    <h2>Key Technical Projects</h2>
+    <div class="content-section">
+        {{PROJECTS}}
+    </div>
+
+    <h2>Education</h2>
+    <div class="content-section">
+        <p><strong>Universitas Mikroskil</strong> | Medan, Indonesia<br>
+        Bachelor of Computer Science | 2019 - 2024</p>
+        <ul>
+            <li><strong>GPA:</strong> 3.38 / 4.00 | <strong>Focus:</strong> {{EDUCATION_FOCUS}}</li>
+        </ul>
+    </div>
+
+    <h2>Certifications</h2>
+    <div class="content-section">
+        <ul>
+            <li><strong>Intermediate Data Science</strong> (Fresh Graduate Academy) - Digital Talent Scholarship, Komdigi (2025)</li>
+            <li><strong>IT Support</strong> (Fresh Graduate Academy) - Ministry of Communication and Informatics RI (2024)</li>
+            <li><strong>DevOps</strong> - Dicoding Indonesia (2023)</li>
+        </ul>
+    </div>
+
+    <h2>Organizational Experience</h2>
+    <div class="content-section">
+        <p><strong>Anak Dairi Peduli</strong> | Sidikalang, Indonesia<br>
+        <i>Vice Chairman</i> | 2020 - 2021</p>
+    </div>
+
+    <h2>Languages & Additional Information</h2>
+    <div class="content-section">
+        <ul>
+            <li><strong>Languages:</strong> English (Professional working proficiency), Bahasa Indonesia (Native)</li>
+            <li><strong>Availability:</strong> Ready to start immediately</li>
+            <li><strong>Location:</strong> Batam Resident (No relocation required)</li>
+        </ul>
+    </div>
+
+</body>
+</html>

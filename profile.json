@@ -1,0 +1,40 @@
+{
+  "personal_info": {
+    "name": "Roy Antoni Siregar",
+    "location": "Batam, Indonesia",
+    "email": "royxflow@gmail.com",
+    "linkedin": "https://id.linkedin.com/in/roysiregar",
+    "github": "https://github.com/RoySiregar"
+  },
+  "summary": "Bachelor of Informatics Engineering and Backend/Full-Stack Engineer focusing on industrial system efficiency. Deeply interested in automation, Industrial IoT, and integrating machine data into reliable software architectures.",
+  "core_skills": [
+    "C#", ".NET", "Python", "MySQL", "Vue.js", "Next.js", "RESTful API", "MQTT"
+  ],
+  "work_experience": [
+    {
+      "role": "Backend Engineer / IT Staff",
+      "company": "PT Pegatron Technology Indonesia",
+      "duration": "February 2024 - Present",
+      "responsibilities": [
+        "Developing and maintaining backend APIs using C# .NET for real-time production monitoring systems.",
+        "Building backend services to listen to MQTT topics from industrial machines and seamlessly ingest real-time JSON data into MySQL databases.",
+        "Managing operational data pipelines and ensuring the high availability of software architectures within a high-paced manufacturing environment."
+      ]
+    }
+  ],
+  "key_projects": [
+    {
+      "name": "Real-time Production Monitoring Dashboard",
+      "description": "Built a full-stack system (C# .NET Backend, Vue.js Frontend, MySQL) to monitor OEE (Overall Equipment Effectiveness) data and inspection metrics in real-time."
+    },
+    {
+      "name": "Automated Optical Inspection (AOI) Data Pipeline",
+      "description": "Developed a Python script to fetch JSON data and images from the FTP servers of inspection machines, automatically processing and distributing them into relational MySQL tables."
+    },
+    {
+      "name": "Project Control Management System (PCMS)",
+      "description": "Designed the frontend architecture using Next.js and integrated it with backend services for a comprehensive industrial project control management system."
+    }
+  ],
+  "education": "Bachelor of Informatics Engineering, Universitas Mikroskil, 2024"
+}

@@ -1,0 +1,4 @@
+google-genai
+playwright
+mysql-connector-python
+python-dotenv
