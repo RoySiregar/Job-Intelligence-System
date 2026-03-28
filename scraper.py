@@ -1,21 +1,37 @@
 from playwright.sync_api import sync_playwright
 import mysql.connector
 import re
+import time
+import random
 
 # Konfigurasi Koneksi Database Laragon
 db_config = {
     'host': '127.0.0.1',
     'user': 'root',
-    'password': '', # Kosongkan karena default Laragon tidak pakai password
+    'password': '', 
     'database': 'autopilot_jobs_db'
 }
+
+# --- FUNGSI BARU: CEK DUPLIKAT ---
+def is_job_exists(job_id):
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM raw_jobs WHERE job_id = %s", (job_id,))
+        result = cursor.fetchone()
+        return result is not None
+    except mysql.connector.Error as err:
+        print(f"❌ Error DB saat cek duplikat: {err}")
+        return False
+    finally:
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
 
 def save_to_database(job_data):
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
-        
-        # Menggunakan INSERT IGNORE agar lowongan yang sama tidak tersimpan ganda
         sql = """INSERT IGNORE INTO raw_jobs 
                  (job_id, title, company_name, location, job_url) 
                  VALUES (%s, %s, %s, %s, %s)"""
@@ -34,74 +50,102 @@ def save_to_database(job_data):
 
 def run_scraper():
     with sync_playwright() as p:
-        # Tambahkan argumen user_agent agar lebih terlihat seperti manusia, bukan bot
         browser = p.chromium.launch(headless=False) 
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
         page = context.new_page()
         
-        target_url = "https://id.jobstreet.com/id/jobs/in-Batam-Kepulauan-Riau?sortmode=ListedDate"
-        print("🌍 Membuka JobStreet Batam...")
+        current_page = 1
+        total_saved = 0
         
-        try:
-            page.goto(target_url, wait_until="domcontentloaded")
+        # Flag untuk menghentikan seluruh proses jika ketemu data lama
+        stop_scraping = False
+        
+        while not stop_scraping:
+            target_url = f"https://id.jobstreet.com/id/jobs/in-Batam-Kepulauan-Riau?sortmode=ListedDate&page={current_page}"
+            print(f"\n🌍 Membuka JobStreet Batam - Halaman {current_page}...")
             
-            # Kita ganti targetnya. Alih-alih mencari <article>, kita cari judul pekerjaannya langsung
-            print("⏳ Menunggu elemen lowongan kerja muncul...")
-            page.wait_for_selector('[data-automation="jobTitle"]', timeout=15000)
-            
-            # Jika berhasil lewat dari wait_for_selector, berarti data ada
-            # Ambil semua elemen pembungkus yang memiliki judul pekerjaan
-            job_cards = page.locator('//div[.//a[@data-automation="jobTitle"]]').element_handles()
-            
-            print(f"✅ Ditemukan {len(job_cards)} potensi kartu pekerjaan. Mulai ekstraksi...")
-            
-            saved_count = 0
-            
-            for card in job_cards:
+            try:
+                page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
+                
                 try:
-                    title_el = card.query_selector('[data-automation="jobTitle"]')
-                    company_el = card.query_selector('[data-automation="jobCompany"]')
-                    location_el = card.query_selector('[data-automation="jobLocation"]')
-                    
-                    if title_el:
-                        title = title_el.inner_text()
-                        partial_url = title_el.get_attribute('href')
-                        full_url = f"https://id.jobstreet.com{partial_url}"
-                        
-                        match = re.search(r'-(\d{6,10})(\?|$)', partial_url)
-                        job_id = match.group(1) if match else full_url.split('?')[0][-10:]
-                        
-                        company = company_el.inner_text() if company_el else "Perusahaan Dirahasiakan"
-                        location = location_el.inner_text() if location_el else "Batam"
-                        
-                        keywords = ['backend', 'back end', 'fullstack', 'full stack', 'software', 'programmer', 'developer', 'it', 'engineer', 'data']
-                        if any(kw in title.lower() for kw in keywords):
-                            job_data = {
-                                "job_id": job_id,
-                                "title": title,
-                                "company": company,
-                                "location": location,
-                                "url": full_url
-                            }
+                    page.wait_for_selector('[data-automation="jobTitle"]', timeout=10000)
+                except:
+                    print(f"Elements tidak ditemukan di hal {current_page}. Mungkin sudah habis.")
+                    break
+                
+                job_cards = page.locator('//div[.//a[@data-automation="jobTitle"]]').element_handles()
+                print(f"⏳ Mengekstrak {len(job_cards)} potensi kartu pekerjaan...")
+                
+                page_saved_count = 0
+                for card in job_cards:
+                    try:
+                        title_el = card.query_selector('[data-automation="jobTitle"]')
+                        if title_el:
+                            title = title_el.inner_text()
+                            partial_url = title_el.get_attribute('href')
+                            full_url = f"https://id.jobstreet.com{partial_url}"
                             
-                            save_to_database(job_data)
-                            print(f"💾 Disimpan: {title} | {company}")
-                            saved_count += 1
-                except Exception as e:
-                    pass # Abaikan error per kartu agar loop tetap berjalan
-                    
-            print(f"\n🎉 Selesai! {saved_count} lowongan IT berhasil dimasukkan ke database.")
-            
-        except Exception as e:
-            print(f"❌ Terjadi kesalahan atau Timeout: {e}")
-            print("📸 Mengambil screenshot untuk dianalisis (lihat file error_screenshot.png di folder Anda)")
-            page.screenshot(path="error_screenshot.png")
-            
-        finally:
-            browser.close()
+                            # Ekstrak Job ID
+                            match = re.search(r'-(\d{6,10})(\?|$)', partial_url)
+                            job_id = match.group(1) if match else full_url.split('?')[0][-10:]
+                            
+                            # --- LOGIKA MODIFIKASI: CEK APAKAH DATA SUDAH ADA ---
+                            if is_job_exists(job_id):
+                                print(f"🛑 Lowongan ID {job_id} ({title}) sudah ada di database.")
+                                print("✨ Mencapai batas lowongan lama. Berhenti scraping.")
+                                stop_scraping = True
+                                break # Keluar dari loop card
+                            
+                            company_el = card.query_selector('[data-automation="jobCompany"]')
+                            location_el = card.query_selector('[data-automation="jobLocation"]')
+                            company = company_el.inner_text() if company_el else "Perusahaan Dirahasiakan"
+                            location = location_el.inner_text() if location_el else "Batam"
+                            
+                            # Filter Keyword IT
+                            keywords = ['backend', 'back end', 'fullstack', 'full stack', 'software', 'programmer', 'developer', 'it', 'engineer', 'data', 'iot']
+                            if any(kw in title.lower() for kw in keywords):
+                                job_data = {
+                                    "job_id": job_id,
+                                    "title": title,
+                                    "company": company,
+                                    "location": location,
+                                    "url": full_url
+                                }
+                                save_to_database(job_data)
+                                page_saved_count += 1
+                                total_saved += 1
+                    except Exception as e:
+                        continue
+                
+                if stop_scraping:
+                    break # Keluar dari loop while page
 
-# BLOK EKSEKUSI UTAMA
+                print(f"✅ Halaman {current_page} selesai. {page_saved_count} lowongan baru disimpan.")
+
+                # --- LOGIKA PAGINATION ---
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                time.sleep(2) 
+
+                next_button = page.locator('a[aria-label="Next"], a:has-text("Next")').first
+                
+                if next_button.is_visible():
+                    print(f"➡️ Lanjut ke Halaman {current_page + 1}...")
+                    current_page += 1
+                    time.sleep(random.uniform(3, 5))
+                else:
+                    if len(job_cards) >= 30:
+                         current_page += 1
+                    else:
+                         break
+
+            except Exception as e:
+                print(f"❌ Kesalahan pada halaman {current_page}: {e}")
+                break
+                
+        print(f"\n🎉 SELESAI! Total {total_saved} lowongan baru berhasil ditambahkan.")
+        browser.close()
+
 if __name__ == "__main__":
     run_scraper()

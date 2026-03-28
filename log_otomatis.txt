@@ -1,0 +1,55 @@
+=== Eksekusi: Fri 03/20/2026 19:05:01.41 === 
+Traceback (most recent call last):
+  File "C:\Roy\AutoPilot-Jobs\scraper.py", line 107, in <module>
+    run_scraper()
+  File "C:\Roy\AutoPilot-Jobs\scraper.py", line 45, in run_scraper
+    print("\U0001f30d Membuka JobStreet Batam...")
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f30d' in position 0: character maps to <undefined>
+Traceback (most recent call last):
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\site-packages\mysql\connector\connection_cext.py", line 354, in _open_connection
+    self._cmysql.connect(**cnx_kwargs)
+_mysql_connector.MySQLInterfaceError: Can't connect to MySQL server on '127.0.0.1:3306' (10061)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Roy\AutoPilot-Jobs\detail_scraper.py", line 15, in get_jobs_without_description
+    conn = mysql.connector.connect(**db_config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\site-packages\mysql\connector\pooling.py", line 322, in connect
+    return CMySQLConnection(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\site-packages\mysql\connector\connection_cext.py", line 142, in __init__
+    self.connect(**kwargs)
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\site-packages\mysql\connector\abstracts.py", line 1604, in connect
+    self._open_connection()
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\site-packages\mysql\connector\connection_cext.py", line 360, in _open_connection
+    raise get_mysql_exception(
+mysql.connector.errors.DatabaseError: 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:3306' (10061)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Roy\AutoPilot-Jobs\detail_scraper.py", line 110, in <module>
+    run_detail_scraper()
+  File "C:\Roy\AutoPilot-Jobs\detail_scraper.py", line 48, in run_detail_scraper
+    jobs = get_jobs_without_description()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Roy\AutoPilot-Jobs\detail_scraper.py", line 23, in get_jobs_without_description
+    print(f"\u274c Error DB: {err}")
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+Traceback (most recent call last):
+  File "C:\Roy\AutoPilot-Jobs\ai_processor.py", line 194, in <module>
+    process_all_jobs()
+  File "C:\Roy\AutoPilot-Jobs\ai_processor.py", line 75, in process_all_jobs
+    print("\U0001f680 Memulai pemrosesan massal Auto-Pilot AI (Dynamic PDF Generation)...")
+  File "C:\Users\admin\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f680' in position 0: character maps to <undefined>

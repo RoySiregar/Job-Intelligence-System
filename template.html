@@ -9,7 +9,7 @@
             margin: 15mm 15mm 15mm 15mm;
         }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif; /* Kembali ke font modern yang bersih */
+            font-family: 'Segoe UI', Arial, sans-serif;
             font-size: 10.5pt;
             color: #000;
             line-height: 1.4;
@@ -31,23 +31,24 @@
             font-size: 10pt;
         }
         .header a {
-            color: #0563C1; /* Kode hex warna biru standar link MS Word */
+            color: #0563C1;
             text-decoration: underline;
         }
+        
+        /* Gaya Judul: Garis di ATAS teks */
         h2 {
-            font-size: 12pt;
+            font-size: 11.5pt;
             text-transform: uppercase;
-            border-bottom: 1px solid #000;
-            padding-bottom: 3px;
-            margin-top: 15px;
-            margin-bottom: 8px;
+            border-top: 1.5px solid #000; /* Garis di atas */
+            padding-top: 4px; /* Jarak teks ke garis atas */
+            margin-top: 18px; /* Jarak garis ke section sebelumnya */
+            margin-bottom: 8px; /* Jarak teks ke konten di bawahnya */
+            font-weight: bold;
         }
+
         .content-section {
             margin-bottom: 12px;
             text-align: justify;
-        }
-        .skills-section p {
-            margin: 3px 0;
         }
         ul {
             margin-top: 5px;
@@ -60,6 +61,21 @@
         strong {
             font-weight: bold;
         }
+        .work-title-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+        .work-header {
+            margin-bottom: 5px;
+        }
+        .work-header strong {
+            font-size: 11pt;
+        }
+        small {
+            color: #444; /* Warna abu gelap untuk catatan divisi agar tidak terlalu mencolok */
+        }
+
     </style>
 </head>
 <body>
@@ -74,11 +90,6 @@
         {{SUMMARY}}
     </div>
 
-    <h2>Technical Skills</h2>
-    <div class="content-section skills-section">
-        {{SKILLS}}
-    </div>
-
     <h2>Professional Experience</h2>
     <div class="content-section">
         {{EXPERIENCE}}
@@ -87,6 +98,11 @@
     <h2>Key Technical Projects</h2>
     <div class="content-section">
         {{PROJECTS}}
+    </div>
+
+    <h2>Technical Skills</h2>
+    <div class="content-section">
+        {{SKILLS}}
     </div>
 
     <h2>Education</h2>
@@ -107,18 +123,12 @@
         </ul>
     </div>
 
-    <h2>Organizational Experience</h2>
-    <div class="content-section">
-        <p><strong>Anak Dairi Peduli</strong> | Sidikalang, Indonesia<br>
-        <i>Vice Chairman</i> | 2020 - 2021</p>
-    </div>
-
     <h2>Languages & Additional Information</h2>
     <div class="content-section">
         <ul>
-            <li><strong>Languages:</strong> English (Professional working proficiency), Bahasa Indonesia (Native)</li>
-            <li><strong>Availability:</strong> Ready to start immediately</li>
-            <li><strong>Location:</strong> Batam Resident (No relocation required)</li>
+            <li><strong>Languages:</strong> {{LANGUAGES}}</li>
+            <li><strong>Availability:</strong> {{AVAILABILITY}}</li>
+            <li><strong>Location:</strong> {{LOCATION_DETAILS}}</li>
         </ul>
     </div>
 

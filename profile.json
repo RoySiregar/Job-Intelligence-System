@@ -2,9 +2,11 @@
   "personal_info": {
     "name": "Roy Antoni Siregar",
     "location": "Batam, Indonesia",
+    "phone": "+628123456789",
     "email": "royxflow@gmail.com",
     "linkedin": "https://id.linkedin.com/in/roysiregar",
-    "github": "https://github.com/RoySiregar"
+    "github": "https://github.com/RoySiregar",
+    "portfolio": "https://portofolio-roy-nu.vercel.app/"
   },
   "summary": "Bachelor of Informatics Engineering and Backend/Full-Stack Engineer focusing on industrial system efficiency. Deeply interested in automation, Industrial IoT, and integrating machine data into reliable software architectures.",
   "core_skills": [
@@ -14,7 +16,8 @@
     {
       "role": "Backend Engineer / IT Staff",
       "company": "PT Pegatron Technology Indonesia",
-      "duration": "February 2024 - Present",
+      "division": "BG6 - Manufacturing & Operation Management Center (Visual & Program Development Section)",
+      "duration": "February 2025 - Present",
       "responsibilities": [
         "Developing and maintaining backend APIs using C# .NET for real-time production monitoring systems.",
         "Building backend services to listen to MQTT topics from industrial machines and seamlessly ingest real-time JSON data into MySQL databases.",

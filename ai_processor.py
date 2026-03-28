@@ -1,14 +1,14 @@
 import mysql.connector
 import json
 import os
-import time  # Ditambahkan untuk jeda waktu
-from google import genai
-from google.genai import types
+import time
+from groq import Groq
 from playwright.sync_api import sync_playwright
+from dotenv import load_dotenv
 
-# ==========================================
-# KONFIGURASI DATABASE & API
-# ==========================================
+# 1. LOAD CONFIGURATION
+load_dotenv()
+
 db_config = {
     'host': '127.0.0.1',
     'user': 'root',
@@ -16,31 +16,31 @@ db_config = {
     'database': 'autopilot_jobs_db'
 }
 
-# --- MASUKKAN API KEY GEMINI ANDA DI SINI ---
-API_KEY = "AIzaSyBS4r3GzKsZr1vG57UER9kiA-VxzsLKFV0"
+api_key_env = os.getenv("GROQ_API_KEY")
+if not api_key_env:
+    print("❌ ERROR: GROQ_API_KEY tidak ditemukan!")
+    exit()
 
-# Inisialisasi Client Gemini
-client = genai.Client(api_key=API_KEY)
+client = Groq(api_key=api_key_env)
 
-# ==========================================
-# FUNGSI PENDUKUNG
-# ==========================================
+# 2. FUNGSI PENDUKUNG
 def load_my_profile():
-    if not os.path.exists('profile.json'):
+    if not os.path.exists('profile.json'): 
+        print("❌ ERROR: profile.json tidak ditemukan!")
         return None
     with open('profile.json', 'r', encoding='utf-8') as file:
         return json.load(file)
 
-def get_draft_ready_job():
+def get_batch_jobs(limit=1):
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(dictionary=True)
-        # Ambil 1 lowongan yang statusnya DRAFT_READY
-        cursor.execute("SELECT id, title, company_name, job_description FROM raw_jobs WHERE status = 'DRAFT_READY' AND job_description IS NOT NULL LIMIT 1")
-        return cursor.fetchone()
+        query = "SELECT id, title, company_name, job_description FROM raw_jobs WHERE status = 'DRAFT_READY' AND job_description IS NOT NULL LIMIT %s"
+        cursor.execute(query, (limit,))
+        return cursor.fetchall()
     except Exception as e:
-        print(f"❌ Error DB: {e}")
-        return None
+        print(f"❌ Error DB (Get Jobs): {e}")
+        return []
     finally:
         if 'conn' in locals() and conn.is_connected():
             cursor.close()
@@ -50,6 +50,9 @@ def save_ai_result(job_id, keywords, cover_letter):
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
+        # Mengubah keywords menjadi string jika berupa list untuk database
+        if isinstance(keywords, list):
+            keywords = ", ".join(keywords)
         sql = "UPDATE raw_jobs SET skills_required = %s, cover_letter = %s, status = 'APPLIED' WHERE id = %s"
         cursor.execute(sql, (keywords, cover_letter, job_id))
         conn.commit()
@@ -61,134 +64,135 @@ def save_ai_result(job_id, keywords, cover_letter):
             conn.close()
 
 def generate_pdf_with_playwright(html_content, output_filename):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.set_content(html_content)
-        page.pdf(path=output_filename, format="A4", print_background=True)
-        browser.close()
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.set_content(html_content)
+            page.wait_for_timeout(1000)
+            page.pdf(path=output_filename, format="A4", print_background=True)
+            browser.close()
+    except Exception as e:
+        print(f"❌ Gagal membuat PDF: {e}")
 
-# ==========================================
-# FUNGSI UTAMA AI PROCESSSOR
-# ==========================================
+# 3. FUNGSI PROSES UTAMA
 def process_all_jobs():
-    print("🚀 Memulai pemrosesan massal Auto-Pilot AI (Dynamic PDF Generation)...")
+    print("🚀 Memulai Auto-Pilot (Groq Llama-3.1 Mode)...")
     
     my_real_profile = load_my_profile()
-    if not my_real_profile:
-        print("❌ File profile.json tidak ditemukan.")
-        return 
-        
-    profile_string = json.dumps(my_real_profile, indent=2)
-    processed_count = 0
+    if not my_real_profile: return 
     
-    if not os.path.exists("Tailored_CVs"):
-        os.makedirs("Tailored_CVs")
-        
-    if not os.path.exists('template.html'):
-        print("❌ File template.html tidak ditemukan!")
-        return
+    # Ringkas data untuk AI
+    brief_data = {
+        "summary": my_real_profile['summary'],
+        "skills": my_real_profile['core_skills'],
+        "experience": my_real_profile['work_experience'][0]['role']
+    }
+    profile_for_ai = json.dumps(brief_data)
+    
+    processed_count = 0
+    if not os.path.exists("Tailored_CVs"): os.makedirs("Tailored_CVs")
+    if not os.path.exists('template.html'): return
         
     with open('template.html', 'r', encoding='utf-8') as f:
         html_template = f.read()
     
     while True:
-        job = get_draft_ready_job()
-        
-        if not job:
-            print(f"\n🎉 Selesai! Tidak ada lagi lowongan DRAFT_READY. Total PDF: {processed_count}")
+        jobs = get_batch_jobs(limit=1)
+        if not jobs:
+            print(f"\n🎉 SELESAI! Total CV: {processed_count}")
             break
 
-        print(f"\n🤖 Menganalisis CV untuk: {job['title']} di {job['company_name']}...")
-
-        prompt = f"""
-        Anda adalah asisten karir profesional. Buat Cover Letter dan susun ulang Profil Kandidat ke dalam potongan kode HTML murni.
-
-        PROFIL ASLI KANDIDAT:
-        {profile_string}
-
-        DESKRIPSI PEKERJAAN ({job['title']} di {job['company_name']}):
-        {job['job_description']}
-
-        INSTRUKSI:
-        1. 100% BAHASA INGGRIS.
-        2. Gunakan tag HTML dasar (<p>, <ul>, <li>, <strong>).
-        3. 'summary_html': 1 paragraf ringkasan profesional.
-        4. 'skills_html': Urutkan skill yang paling relevan di depan.
-        5. 'experience_html' & 'projects_html': Gunakan bullet points, fokus pada fakta teknis (C#, .NET, MQTT, MySQL).
-        6. 'education_focus': 3-4 topik CS relevan.
-        
-        Berikan jawaban HANYA dalam JSON:
-        {{
-            "keywords": "...",
-            "cover_letter": "...",
-            "summary_html": "...",
-            "skills_html": "...",
-            "experience_html": "...",
-            "projects_html": "...",
-            "education_focus": "..."
-        }}
-        """
+        job = jobs[0]
+        print(f"\n📦 Memproses: {job['title']} di {job['company_name']}...")
 
         try:
-            response = client.models.generate_content(
-                model='gemini-2.0-flash', # Menggunakan model 2.0 Flash
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.2 
-                )
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "You are a professional career coach. Output MUST be in JSON format only."},
+                    {"role": "user", "content": f"""
+                        Task: Create tailored CV content.
+                        CANDIDATE: {profile_for_ai}
+                        JOB: {job['job_description']}
+
+                        Return this exact JSON:
+                        {{
+                            "keywords": "3-5 matching skills",
+                            "cover_letter": "Professional cover letter content",
+                            "summary_html": "2-3 sentence professional summary",
+                            "skills_html": "Relevant skills as <li> tags",
+                            "experience_html": "3-5 bullet points (<li>) focusing on .NET, IoT, and SQL",
+                            "projects_html": "2 relevant projects as <li> tags",
+                            "education_focus": "Bachelor of Computer Science"
+                        }}
+                    """}
+                ],
+                model="llama-3.1-8b-instant", 
+                response_format={"type": "json_object"},
+                temperature=0.2,
             )
             
-            ai_data = json.loads(response.text.strip())
+            res = json.loads(chat_completion.choices[0].message.content)
             
-            # 1. Simpan ke Database
-            save_ai_result(job['id'], ai_data['keywords'], ai_data['cover_letter'])
+            # 1. Update DB
+            save_ai_result(job['id'], res.get('keywords'), res.get('cover_letter'))
             
-            # 2. Merakit HTML Final
+            # 2. Merakit HTML
             final_html = html_template
-            final_html = final_html.replace('{{NAME}}', my_real_profile['personal_info']['name'])
-            
-            p_info = my_real_profile['personal_info']
+            p_info = my_real_profile.get('personal_info', {})
             exp = my_real_profile['work_experience'][0]
             
-            line1 = f"{p_info['location']} | {p_info.get('phone', '')} | <a href='mailto:{p_info['email']}'>{p_info['email']}</a>"
-            github_text = p_info['github'].replace('https://', '')
-            portfolio_val = p_info.get('portfolio', '')
-            portfolio_url = f"https://{portfolio_val}" if not portfolio_val.startswith('http') else portfolio_val
-            line2 = f"<a href='{p_info['linkedin']}'>{p_info['linkedin']}</a> | <a href='{p_info['github']}'>{github_text}</a> | <a href='{portfolio_url}'>{portfolio_val}</a>"
+            # --- KONTAK (2 BARIS RAPI) ---
+            portfolio_url = "https://portofolio-roy-nu.vercel.app/"
+            line1 = f"{p_info.get('location')} | {p_info.get('phone')} | <a href='mailto:{p_info.get('email')}'>{p_info.get('email')}</a>"
             
+            links = [
+                f"<a href='{p_info.get('linkedin')}'>id.linkedin.com/in/roysiregar</a>",
+                f"<a href='{p_info.get('github')}'>github.com/RoySiregar</a>",
+                f"<a href='{portfolio_url}'>portofolio-roy-nu.vercel.app</a>"
+            ]
+            line2 = " | ".join(links)
+            
+            # --- EXPERIENCE HEADER (DENGAN DIVISI & NOTE) ---
+            division = "BG6 - Manufacturing & Operation Management Center (Visual & Program Development Section)"
+            note = "Note: Assigned as a full-time Software Developer managing enterprise applications, operating under an Automation Operator contract."
+            
+            job_header = f"""
+            <div class="work-header">
+                <strong>{exp['company']}</strong> | Batam, Indonesia<br>
+                <strong>{exp['role']} / Industrial IoT Developer</strong> | {exp['duration']}<br>
+                <small>Division: {division}</small><br>
+                <small><i>{note}</i></small>
+            </div>
+            """
+            
+            # --- REPLACE PLACEHOLDERS ---
+            final_html = final_html.replace('{{NAME}}', p_info.get('name', 'Roy Antoni Siregar'))
             final_html = final_html.replace('{{CONTACT_INFO}}', f"{line1}<br>{line2}")
-
-            job_header = f"<p><strong>{exp['role']}</strong> | {exp['company']}<br><i>{exp['division']}</i> | {exp['duration']}</p>"
+            final_html = final_html.replace('{{SUMMARY}}', res.get('summary_html', ''))
+            final_html = final_html.replace('{{SKILLS}}', f"<ul>{res.get('skills_html', '')}</ul>")
+            final_html = final_html.replace('{{EXPERIENCE}}', job_header + f"<ul>{res.get('experience_html', '')}</ul>")
+            final_html = final_html.replace('{{PROJECTS}}', f"<ul>{res.get('projects_html', '')}</ul>")
+            final_html = final_html.replace('{{EDUCATION_FOCUS}}', res.get('education_focus', 'Informatics Engineering'))
             
-            final_html = final_html.replace('{{SUMMARY}}', ai_data['summary_html'])
-            final_html = final_html.replace('{{SKILLS}}', ai_data['skills_html'])
-            final_html = final_html.replace('{{EXPERIENCE}}', job_header + ai_data['experience_html'])
-            final_html = final_html.replace('{{PROJECTS}}', ai_data['projects_html'])
-            final_html = final_html.replace('{{EDUCATION_FOCUS}}', ai_data['education_focus'])
+            # Tambahan Informasi Statis
+            final_html = final_html.replace('{{LANGUAGES}}', "English (Professional working proficiency), Bahasa Indonesia (Native)")
+            final_html = final_html.replace('{{AVAILABILITY}}', "Ready to start immediately")
+            final_html = final_html.replace('{{LOCATION_DETAILS}}', "Batam Resident (No relocation required)")
             
             # 3. Cetak PDF
             safe_company = "".join([c for c in job['company_name'] if c.isalnum() or c==' ']).strip().replace(' ', '_')
             pdf_filename = f"Tailored_CVs/CV_Roy_{safe_company}.pdf"
-            
             generate_pdf_with_playwright(final_html, pdf_filename)
             
             processed_count += 1
             print(f"✅ Berhasil! PDF tersimpan: {pdf_filename}")
-            
-            # Jeda 30 detik untuk menjaga kuota API Free Tier
-            print("⏳ Menunggu 30 detik sebelum lowongan berikutnya...")
-            time.sleep(30)
+            time.sleep(3)
 
         except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                print("⚠️ Kuota API habis/Limit tercapai. Menunggu 60 detik sebelum mencoba kembali...")
-                time.sleep(60)
-                continue # Retry lowongan yang sama
-            else:
-                print(f"❌ Terjadi kesalahan: {e}")
-                break
+            print(f"❌ Error Groq ID {job['id']}: {e}")
+            time.sleep(10)
+            continue
 
 if __name__ == "__main__":
     process_all_jobs()
