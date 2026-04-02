@@ -2,22 +2,27 @@ import os
 from playwright.sync_api import sync_playwright
 
 def create_pdf_from_manual_text():
-    # 1. Pastikan template ada
+    # 1. Tentukan Folder Output
+    output_folder = "CV_Manual"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+        print(f"📁 Folder '{output_folder}' berhasil dibuat.")
+
+    # 2. Pastikan template ada
     if not os.path.exists('template.html'):
         print("❌ Error: File template.html tidak ditemukan!")
         return
 
-    # 2. Data yang akan dimasukkan ke Template
-    # Saya sudah merapikan teks manualmu ke dalam format HTML agar pas di template
+    # 3. Data yang akan dimasukkan ke Template (Teks Tetap Pilihanmu)
     data_cv = {
         "NAME": "ROY ANTONI SIREGAR",
-        "CONTACT_INFO": "Batam, Indonesia | +62 821 5436 7080 | <a href='mailto:roysiregar09@gmail.com' style='color: #0000EE; text-decoration: none;'>roysiregar09@gmail.com</a><br><a href='https://id.linkedin.com/in/roysiregar' style='color: #0000EE; text-decoration: none;'>linkedin.com/in/roysiregar</a> | <a href='https://github.com/RoySiregar' style='color: #0000EE; text-decoration: none;'>github.com/RoySiregar</a> | <a href='https://portofolio-roy-nu.vercel.app' style='color: #0000EE; text-decoration: none;'>portofolio-roy-nu.vercel.app</a>",
+        "CONTACT_INFO": "Batam, Indonesia | +62 821 5436 7080 | <a href='mailto:roysiregar09@gmail.com' style='color: #0563C1; text-decoration: underline;'>roysiregar09@gmail.com</a><br><a href='https://id.linkedin.com/in/roysiregar' style='color: #0563C1; text-decoration: underline;'>id.linkedin.com/in/roysiregar</a> | <a href='https://github.com/RoySiregar' style='color: #0563C1; text-decoration: underline;'>github.com/RoySiregar</a> | <a href='https://portofolio-roy-nu.vercel.app' style='color: #0563C1; text-decoration: underline;'>portofolio-roy-nu.vercel.app</a>",
         
         "SUMMARY": "Computer Science Graduate (GPA 3.38) driving Digital Transformation and Industry 4.0 initiatives within a Tier-1 Electronics Manufacturing environment (PT Pegatron). Proven ability to translate complex factory business processes into full-stack digital solutions (C# .NET, Vue.js, SQL) that optimize resource utilization and eliminate waste in alignment with LEAN manufacturing principles. Expert in architecting real-time data pipelines (Kafka, MQTT) to empower management with data-driven decision-making.",
         
         "EXPERIENCE": """
         <div class="work-title-row">
-            <span>PT PEGAUNIHAN TECHNOLOGY INDONESIA (PEGATRON)</span>
+            <strong>PT PEGAUNIHAN TECHNOLOGY INDONESIA (PEGATRON)</strong>
             <span>Februari 2024 – Present</span>
         </div>
         <i>Digital Transformation & Automation Engineer | Div: BG6 - Manufacturing & Operation Management Center</i>
@@ -53,22 +58,25 @@ def create_pdf_from_manual_text():
         "LOCATION_DETAILS": "Batam Resident (No relocation required)"
     }
 
-    # 3. Baca Template dan Replace Placeholder
+    # 4. Baca Template dan Replace Placeholder
     with open('template.html', 'r', encoding='utf-8') as f:
         html_content = f.read()
 
     for key, value in data_cv.items():
+        # Replace {{KEY}} dengan value
         html_content = html_content.replace(f"{{{{{key}}}}}", value)
 
-    # 4. Render ke PDF pakai Playwright
+    # 5. Render ke PDF pakai Playwright ke folder CV_Manual
     with sync_playwright() as p:
-        print("⏳ Sedang merender PDF...")
+        print("⏳ Sedang merender CV Manual ke PDF...")
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         page.set_content(html_content)
-        page.wait_for_timeout(1000) # Tunggu sebentar agar CSS rapi
         
-        output_file = "CV_Roy_Antoni_Siregar.pdf"
+        # Berikan waktu render agar CSS diaplikasikan sempurna
+        page.wait_for_timeout(1000) 
+        
+        output_file = os.path.join(output_folder, "CV_Roy_Antoni_Siregar_Manual.pdf")
         page.pdf(path=output_file, format="A4", print_background=True)
         browser.close()
         

@@ -93,10 +93,9 @@ def run_scraper():
                             
                             # --- LOGIKA MODIFIKASI: CEK APAKAH DATA SUDAH ADA ---
                             if is_job_exists(job_id):
-                                print(f"🛑 Lowongan ID {job_id} ({title}) sudah ada di database.")
-                                print("✨ Mencapai batas lowongan lama. Berhenti scraping.")
-                                stop_scraping = True
-                                break # Keluar dari loop card
+                                print(f"⏩ Lowongan ID {job_id} ({title}) sudah ada. Melewati...")
+
+                                continue # Keluar dari loop card
                             
                             company_el = card.query_selector('[data-automation="jobCompany"]')
                             location_el = card.query_selector('[data-automation="jobLocation"]')
