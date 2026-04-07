@@ -1,3 +1,4 @@
+import os
 from playwright.sync_api import sync_playwright
 import mysql.connector
 import time
@@ -91,6 +92,11 @@ def run_detail_scraper():
     if not jobs:
         print("✅ Semua lowongan sudah memiliki deskripsi.")
         return
+    
+    debug_folder = "Screenshot_debug"
+    if not os.path.exists(debug_folder):
+        os.makedirs(debug_folder)
+        print(f"📁 Folder '{debug_folder}' berhasil dibuat.")
 
     print(f"🔍 Ditemukan {len(jobs)} job, mulai scraping...\n")
 
@@ -155,8 +161,10 @@ def run_detail_scraper():
                     print("⚠️ Deskripsi tidak ditemukan")
 
                     # Screenshot debug
-                    safe_title = "".join([c for c in job['title'] if c.isalnum() or c == " "]).rstrip()
-                    page.screenshot(path=f"error_{safe_title}.png")
+                    safe_title = "".join([c for c in job['title'] if c.isalnum() or c == " "]).rstrip().replace(" ", "_")
+                    screenshot_path = os.path.join(debug_folder, f"error_{safe_title}.png")
+                    page.screenshot(path=screenshot_path)
+                    print(f"📸 Screenshot disimpan di: {screenshot_path}")
 
             except Exception as e:
                 print(f"❌ ERROR: {e}")

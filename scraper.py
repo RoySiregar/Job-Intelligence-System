@@ -12,43 +12,37 @@ db_config = {
     'database': 'autopilot_jobs_db'
 }
 
-# --- FUNGSI BARU: CEK DUPLIKAT ---
-def is_job_exists(job_id):
+# --- FUNGSI DATABASE (Dioptimalkan) ---
+def is_job_exists(cursor, job_id):
     try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
         cursor.execute("SELECT id FROM raw_jobs WHERE job_id = %s", (job_id,))
-        result = cursor.fetchone()
-        return result is not None
+        return cursor.fetchone() is not None
     except mysql.connector.Error as err:
         print(f"❌ Error DB saat cek duplikat: {err}")
         return False
-    finally:
-        if 'conn' in locals() and conn.is_connected():
-            cursor.close()
-            conn.close()
 
-def save_to_database(job_data):
+def save_to_database(cursor, conn, job_data):
     try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
         sql = """INSERT IGNORE INTO raw_jobs 
                  (job_id, title, company_name, location, job_url) 
                  VALUES (%s, %s, %s, %s, %s)"""
-        
         val = (job_data['job_id'], job_data['title'], job_data['company'], 
                job_data['location'], job_data['url'])
-        
         cursor.execute(sql, val)
         conn.commit()
     except mysql.connector.Error as err:
-        print(f"❌ Error DB: {err}")
-    finally:
-        if 'conn' in locals() and conn.is_connected():
-            cursor.close()
-            conn.close()
+        print(f"❌ Error DB saat menyimpan: {err}")
+
 
 def run_scraper():
+    # --- BUKA KONEKSI DATABASE SATU KALI DI SINI ---
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+    except mysql.connector.Error as err:
+        print(f"❌ Gagal koneksi ke database: {err}")
+        return # Hentikan program jika gagal konek DB
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False) 
         context = browser.new_context(
@@ -59,8 +53,10 @@ def run_scraper():
         current_page = 1
         total_saved = 0
         
-        # Flag untuk menghentikan seluruh proses jika ketemu data lama
+        # --- KONFIGURASI TOLERANSI DUPLIKAT ---
         stop_scraping = False
+        consecutive_duplicates = 0
+        MAX_TOLERANCE = 15
         
         while not stop_scraping:
             target_url = f"https://id.jobstreet.com/id/jobs/in-Batam-Kepulauan-Riau?sortmode=ListedDate&page={current_page}"
@@ -91,11 +87,20 @@ def run_scraper():
                             match = re.search(r'-(\d{6,10})(\?|$)', partial_url)
                             job_id = match.group(1) if match else full_url.split('?')[0][-10:]
                             
-                            # --- LOGIKA MODIFIKASI: CEK APAKAH DATA SUDAH ADA ---
-                            if is_job_exists(job_id):
+                            # --- CEK DUPLIKAT DENGAN TOLERANSI ---
+                            if is_job_exists(cursor, job_id):
                                 print(f"⏩ Lowongan ID {job_id} ({title}) sudah ada. Melewati...")
+                                consecutive_duplicates += 1
+                                
+                                if consecutive_duplicates >= MAX_TOLERANCE:
+                                    print(f"🛑 Menemukan {MAX_TOLERANCE} data lama berturut-turut. Menghentikan proses scraping...")
+                                    stop_scraping = True
+                                    break # Keluar dari loop card
+                                    
+                                continue # Lanjut ke card berikutnya
 
-                                continue # Keluar dari loop card
+                            # --- PENTING: RESET COUNTER JIKA KETEMU DATA BARU ---
+                            consecutive_duplicates = 0 
                             
                             company_el = card.query_selector('[data-automation="jobCompany"]')
                             location_el = card.query_selector('[data-automation="jobLocation"]')
@@ -112,16 +117,18 @@ def run_scraper():
                                     "location": location,
                                     "url": full_url
                                 }
-                                save_to_database(job_data)
+                                save_to_database(cursor, conn, job_data)
                                 page_saved_count += 1
                                 total_saved += 1
+                                
                     except Exception as e:
+                        print(f"⚠️ Error saat memproses 1 card: {e}")
                         continue
                 
                 if stop_scraping:
-                    break # Keluar dari loop while page
+                    break # Keluar dari loop while (pindah halaman)
 
-                print(f"✅ Halaman {current_page} selesai. {page_saved_count} lowongan baru disimpan.")
+                print(f"✅ Halaman {current_page} selesai. {page_saved_count} lowongan baru IT disimpan.")
 
                 # --- LOGIKA PAGINATION ---
                 page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
@@ -144,7 +151,12 @@ def run_scraper():
                 break
                 
         print(f"\n🎉 SELESAI! Total {total_saved} lowongan baru berhasil ditambahkan.")
+        
+        # --- TUTUP BROWSER & DATABASE ---
         browser.close()
+        if 'conn' in locals() and conn.is_connected():
+            cursor.close()
+            conn.close()
 
 if __name__ == "__main__":
     run_scraper()

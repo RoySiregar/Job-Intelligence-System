@@ -2,81 +2,73 @@ import os
 from playwright.sync_api import sync_playwright
 
 def create_pdf_from_manual_text():
-    # 1. Tentukan Folder Output
-    output_folder = "CV_Manual"
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-        print(f"📁 Folder '{output_folder}' berhasil dibuat.")
-
-    # 2. Pastikan template ada
+    # 1. Pastikan template ada
     if not os.path.exists('template.html'):
         print("❌ Error: File template.html tidak ditemukan!")
         return
 
-    # 3. Data yang akan dimasukkan ke Template (Teks Tetap Pilihanmu)
+    # 2. Data yang akan dimasukkan ke Template
+    # Saya sudah merapikan teks manualmu ke dalam format HTML agar pas di template
     data_cv = {
         "NAME": "ROY ANTONI SIREGAR",
-        "CONTACT_INFO": "Batam, Indonesia | +62 821 5436 7080 | <a href='mailto:roysiregar09@gmail.com' style='color: #0563C1; text-decoration: underline;'>roysiregar09@gmail.com</a><br><a href='https://id.linkedin.com/in/roysiregar' style='color: #0563C1; text-decoration: underline;'>id.linkedin.com/in/roysiregar</a> | <a href='https://github.com/RoySiregar' style='color: #0563C1; text-decoration: underline;'>github.com/RoySiregar</a> | <a href='https://portofolio-roy-nu.vercel.app' style='color: #0563C1; text-decoration: underline;'>portofolio-roy-nu.vercel.app</a>",
+        "CONTACT_INFO": "Batam, Indonesia | +62 821 5436 7080 | <a href='mailto:roysiregar09@gmail.com' style='color: #0000EE; text-decoration: none;'>roysiregar09@gmail.com</a><br><a href='https://id.linkedin.com/in/roysiregar' style='color: #0000EE; text-decoration: none;'>linkedin.com/in/roysiregar</a> | <a href='https://github.com/RoySiregar' style='color: #0000EE; text-decoration: none;'>github.com/RoySiregar</a> | <a href='https://portofolio-roy-nu.vercel.app' style='color: #0000EE; text-decoration: none;'>portofolio-roy-nu.vercel.app</a>",
         
-        "SUMMARY": "Computer Science Graduate (GPA 3.38) driving Digital Transformation and Industry 4.0 initiatives within a Tier-1 Electronics Manufacturing environment (PT Pegatron). Proven ability to translate complex factory business processes into full-stack digital solutions (C# .NET, Vue.js, SQL) that optimize resource utilization and eliminate waste in alignment with LEAN manufacturing principles. Expert in architecting real-time data pipelines (Kafka, MQTT) to empower management with data-driven decision-making.",
+        "SUMMARY": "Computer Science Graduate (GPA 3.38) with 2 years of professional experience in Web Application Development. Highly proficient in analyzing system requirements, building RESTful APIs, and developing responsive web interfaces using modern frameworks (Next.js, React.js, Vue.js). A target-oriented professional with a strong foundation in backend development (Golang, PHP, .NET) and MySQL database optimization.",
         
         "EXPERIENCE": """
         <div class="work-title-row">
-            <strong>PT PEGAUNIHAN TECHNOLOGY INDONESIA (PEGATRON)</strong>
+            <span>PT PEGAUNIHAN TECHNOLOGY INDONESIA (PEGATRON)</span>
             <span>Februari 2024 – Present</span>
         </div>
-        <i>Digital Transformation & Automation Engineer | Div: BG6 - Manufacturing & Operation Management Center</i>
+        <i>Software Engineer (Web Application Developer) | Div: BG6 - Manufacturing Center</i>
         <ul>
-            <li><strong>Factory Digitization & LEAN:</strong> Translated manual shop-floor processes into automated digital workflows, directly reducing cycle times and eliminating waste in data collection.</li>
-            <li><strong>Critical Metrics Visualization:</strong> Designed interactive dashboard modules (Vue.js, ECharts) to monitor real-time performance (OEE, TEEP, Yield Rate) for management and line leaders.</li>
-            <li><strong>Data Architecture:</strong> Architected MySQL databases and managed data synchronization via Kafka/MQTT to support predictive failure analysis and operational scenario planning.</li>
-            <li><strong>I4.0 Industrialization:</strong> Collaborated with cross-functional teams to deploy advanced inspection technologies, including an AI-assisted AOI visualizer for defect mapping.</li>
-            <li><strong>System Reliability:</strong> Developed backend services (C# .NET) for RobotService and HistoricalDataService, ensuring system uptime and accurate automated error rate calculations.</li>
+            <li><strong>System Analysis & Backend:</strong> Analyzed complex operational requirements and built robust RESTful APIs to support high-traffic production dashboards.</li>
+            <li><strong>Frontend Development:</strong> Developed interactive and scalable web applications utilizing Next.js, React concepts, and Vue.js with responsive UI designs (Tailwind CSS, Bootstrap).</li>
+            <li><strong>Database & Optimization:</strong> Engineered relational database schemas (MySQL) and implemented composite indexing strategies to drastically optimize real-time queries.</li>
+            <li><strong>Debugging & Optimization:</strong> Conducted rigorous testing and continuous optimization of critical web applications to ensure high stability and minimal downtime.</li>
+            <li><strong>Team Collaboration:</strong> Collaborated with cross-functional teams using Gitea, translating non-technical requirements into efficient technical solutions.</li>
         </ul>
         """,
         
         "PROJECTS": """
         <ul>
-            <li><strong>Future Factory OEE & Productivity Dashboard:</strong> Full-stack real-time monitoring system providing clear visualization of bottlenecks across multiple production floors.</li>
-            <li><strong>Multi-Tier Failure Analysis Engine:</strong> Integrated breakdown system connecting yield reports to granular machine failure data via MySQL/FTP synchronization.</li>
-            <li><strong>High-Precision AOI Visual Analysis:</strong> Sophisticated inspection viewer with reactive coordinate-to-image scaling, optimizing resource utilization during QA processes.</li>
+            <li><strong>Automated Analytics & Reporting Platform:</strong> Built a real-time monitoring web application with complex data aggregation logic to process massive datasets for automated reporting.</li>
+            <li><strong>Multi-Tier Failure Analysis System:</strong> Created an integrated breakdown web portal connecting high-level reports to granular historical data via API integration.</li>
+            <li><strong>Interactive Visual Viewer:</strong> Developed a responsive frontend application handling heavy image datasets with custom APIs to support interactive image manipulation.</li>
         </ul>
         """,
         
         "SKILLS": """
         <ul>
-            <li><strong>I4.0 & Manufacturing:</strong> Digital Transformation Roadmap, LEAN Manufacturing, Smart Industry Readiness Index (SIRI), Cycle Time Reduction.</li>
-            <li><strong>Visualization & Analytics:</strong> ECharts, Real-time Dashboards, OEE / TEEP / Yield Metrics, "What-If" Data Modeling.</li>
-            <li><strong>Software Engineering:</strong> C# (.NET 6/8), Vue.js, Python, JavaScript/TypeScript, SQL (Advanced Indexing).</li>
-            <li><strong>Integration & IIoT:</strong> Kafka, MQTT, FTP, RESTful APIs, System Architecture.</li>
+            <li><strong>Frontend Development:</strong> Next.js, React.js, Vue.js, JavaScript, HTML, Tailwind CSS, Bootstrap.</li>
+            <li><strong>Backend Development:</strong> Golang, PHP, C# (.NET Core), RESTful API Architecture.</li>
+            <li><strong>Database & Tools:</strong> MySQL (Advanced Indexing, Schema Design), PostgreSQL concept, Git/Gitea, Docker.</li>
+            <li><strong>Soft Skills:</strong> System Analysis, Fast Learner, Target Oriented, Strong Communication.</li>
         </ul>
         """,
         
-        "EDUCATION_FOCUS": "System Design & Analysis, Database Management, IoT Architecture",
+        "EDUCATION_FOCUS": "System Design & Analysis, Database Management, Web Architecture",
         "LANGUAGES": "English (Professional Working Proficiency), Bahasa Indonesia (Native)",
-        "AVAILABILITY": "Ready to start immediately (Onsite Batam)",
+        "AVAILABILITY": "Available to start within one month (1-month notice period)",
         "LOCATION_DETAILS": "Batam Resident (No relocation required)"
     }
 
-    # 4. Baca Template dan Replace Placeholder
+    # 3. Baca Template dan Replace Placeholder
     with open('template.html', 'r', encoding='utf-8') as f:
         html_content = f.read()
 
     for key, value in data_cv.items():
-        # Replace {{KEY}} dengan value
         html_content = html_content.replace(f"{{{{{key}}}}}", value)
 
-    # 5. Render ke PDF pakai Playwright ke folder CV_Manual
+    # 4. Render ke PDF pakai Playwright
     with sync_playwright() as p:
-        print("⏳ Sedang merender CV Manual ke PDF...")
+        print("⏳ Sedang merender PDF...")
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         page.set_content(html_content)
+        page.wait_for_timeout(1000) # Tunggu sebentar agar CSS rapi
         
-        # Berikan waktu render agar CSS diaplikasikan sempurna
-        page.wait_for_timeout(1000) 
-        
-        output_file = os.path.join(output_folder, "CV_Roy_Antoni_Siregar_Manual.pdf")
+        output_file = r"C:\Roy\Job Intelligence System\JIS & Auto CV\CV_Manual\CV_Roy_Antoni_Siregar.pdf"
         page.pdf(path=output_file, format="A4", print_background=True)
         browser.close()
         
