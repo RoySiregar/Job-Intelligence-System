@@ -96,51 +96,60 @@ def run_detail_scraper():
     debug_folder = "Screenshot_debug"
     if not os.path.exists(debug_folder):
         os.makedirs(debug_folder)
-        print(f"📁 Folder '{debug_folder}' berhasil dibuat.")
 
     print(f"🔍 Ditemukan {len(jobs)} job, mulai scraping...\n")
 
-    # 🔥 Koneksi DB sekali saja
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
 
+        # --- PERBAIKAN 2: ANTI-BOT (Headers Lengkap) ---
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            viewport={'width': 1920, 'height': 1080}
         )
+        
+        # Menambahkan header ekstra agar terlihat seperti browser asli
+        context.set_extra_http_headers({
+            "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
+            "Referer": "https://id.jobstreet.com/",
+            "DNT": "1",
+            "Upgrade-Insecure-Requests": "1"
+        })
 
         page = context.new_page()
 
         for job in jobs:
-            time.sleep(random.uniform(2, 4))
+            # --- PERBAIKAN 2: ANTI-BOT (Jeda lebih lama & random) ---
+            wait_time = random.uniform(5, 10)
+            print(f"⏳ Menunggu {wait_time:.2f} detik...")
+            time.sleep(wait_time)
 
-            print(f"🌍 {job['title']} | {job['company_name']}")
+            print(f"🌍 Memproses: {job['title']} | {job['company_name']}")
 
             try:
-                # 🔥 RETRY SYSTEM
                 for attempt in range(3):
                     try:
                         page.goto(job['job_url'], wait_until="domcontentloaded", timeout=30000)
+                        # Gerakkan mouse sedikit untuk simulasi manusia
+                        page.mouse.move(random.randint(0, 500), random.randint(0, 500))
                         break
                     except:
-                        print(f"⚠️ Retry {attempt+1}")
-                        time.sleep(2)
+                        print(f"⚠️ Retry {attempt+1} untuk {job['title']}")
+                        time.sleep(3)
 
-                # 🔍 SELECTOR TARGET
                 selectors = [
                     '[data-automation="jobDescription"]',
                     '[data-automation="jobAdDetails"]',
-                    '[data-automation="job-description"]',
                     '.job-description'
                 ]
 
                 description_el = None
-
                 for sel in selectors:
                     try:
-                        page.wait_for_selector(sel, timeout=5000)
+                        page.wait_for_selector(sel, timeout=7000)
                         description_el = page.locator(sel)
                         break
                     except:
@@ -148,39 +157,29 @@ def run_detail_scraper():
 
                 if description_el:
                     full_description = description_el.inner_text()
-
-                    # 🔥 SCORING
                     score = calculate_score(job['title'], full_description)
 
-                    # 🔥 SAVE
+                    # Simpan data
                     update_job_description(cursor, job['id'], full_description, score)
-
-                    print(f"✅ SUCCESS | Score: {score}")
+                    
+                    # --- PERBAIKAN 3: BATCH/INCREMENTAL COMMIT ---
+                    # Commit setiap kali satu data berhasil diambil agar tidak hilang jika terputus
+                    conn.commit() 
+                    print(f"✅ SUCCESS | Score: {score} | Data disimpan ke DB.")
 
                 else:
                     print("⚠️ Deskripsi tidak ditemukan")
-
-                    # Screenshot debug
-                    safe_title = "".join([c for c in job['title'] if c.isalnum() or c == " "]).rstrip().replace(" ", "_")
-                    screenshot_path = os.path.join(debug_folder, f"error_{safe_title}.png")
-                    page.screenshot(path=screenshot_path)
-                    print(f"📸 Screenshot disimpan di: {screenshot_path}")
+                    safe_title = "".join([c for c in job['title'] if c.isalnum() or c == " "]).strip().replace(" ", "_")
+                    page.screenshot(path=os.path.join(debug_folder, f"error_{safe_title}.png"))
 
             except Exception as e:
-                print(f"❌ ERROR: {e}")
+                print(f"❌ ERROR pada {job['title']}: {e}")
 
         browser.close()
 
-    # 🔥 COMMIT SEKALI
-    conn.commit()
     cursor.close()
     conn.close()
+    print("\n🎉 SELESAI! Semua data sudah diproses dan tersimpan.")
 
-    print("\n🎉 SELESAI! Semua data sudah diproses.")
-
-
-# ==============================
-# RUN
-# ==============================
 if __name__ == "__main__":
     run_detail_scraper()
