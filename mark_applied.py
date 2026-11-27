@@ -61,5 +61,5 @@ def mark_as_applied():
             cursor.close()
             conn.close()
 
-if __name__ == "__main__":
-    mark_as_applied()
+if __name__ == "__main__":  
+    mark_as_applied()       
